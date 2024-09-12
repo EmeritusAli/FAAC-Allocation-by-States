@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAAC Local Government Allocations by state</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>Distribution of Revenue Allocation to States by FAAC</h1>
+        <h2 class="subtitle">(2007-2024)</h2>
+        <!-- <p>Click a state to see the average monthly allocation from 2007 to 2024 an</p> -->
+    </div>
+    <div class="content-wrapper">
+        <div class="map-wrapper"></div>
+        <div class="info-panel">
+            <h2 id="state-name">Select a state</h2>
+            <h3 id="average-budget">Hover over a state to see details</h3>
+            <div id="chart"></div>
+        </div>
+    </div>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="./map.js"></script>
+</body>
+</html>

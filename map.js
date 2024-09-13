@@ -3,10 +3,6 @@ async function drawMap() {
     const stateShapes = await d3.json('./nigeria_state_boundaries.geojson')
     const dataset = await d3.csv('./FAAC_State_transposed.csv')
 
-    // console.log('GeoJSON State Names:', stateShapes.features.map(d => d.properties['admin1Name']));
-    // console.log('CSV State Names:', dataset.map(d => d['State']));
-
-
     const cleanStateName = name => name.trim().toLowerCase();
 
     // Standardize the state names in the GeoJSON
@@ -20,32 +16,6 @@ async function drawMap() {
         d['CleanState'] = cleanStateName(d['State']);
       });
 
-    
-
-    // const metricValues = dataset.map(metricAccessor)
-
-    // const cleanBudget = d => {
-    //     const value = d['Budget'];  // Ensure the column name is correct
-    //     return value ? parseFloat(value.replace(/,/g, '')) : 0;
-    // };
-
-
-//     const xScale = d3.scaleTime()
-//     .range([0, 200]); // Width of the chart
-  
-//   const yScale = d3.scaleLinear()
-//     .range([50, 0]); // Height of the chart
-  
-//   // Create the area generator
-//   const area = d3.area()
-//     .x(d => xScale(d.Date))
-//     .y0(50)
-//     .y1(d => yScale(d.Budget));
-
-
-
-
-
 
     //  Calculate the average budget for each state
     const stateBudgets = d3.group(dataset, d => d['CleanState']);
@@ -55,41 +25,19 @@ async function drawMap() {
            const totalBudget = d3.sum(values, d => d.Budget);
            const averageBudget = totalBudget / values.length;
            stateAverages.set(state, averageBudget);
-        //    console.log(averageBudget, totalBudget, state);
        });
-    // console.log("State Averages:", stateAverages);
-
 
     const colorScaleDomain = d3.extent(Array.from(stateAverages.values()));
-    // console.log("Color Scale Domain:", colorScaleDomain);
 
 
        const colorScale = d3.scaleSequential()
-       .domain(colorScaleDomain)  // Extent gives [min, max]
+       .domain(colorScaleDomain)  
        .interpolator(d3.interpolateBlues);
 
 
-
-    // let dimensions = {
-    //     width: window.innerWidth * 0.5,
-    //     margin: {
-    //       top: 10,
-    //       right: 200,
-    //       bottom: 10,
-    //       left: 10,
-    //     },
-    //   }
-    //   dimensions.boundedWidth = dimensions.width
-    //     - dimensions.margin.left
-    //     - dimensions.margin.right
-    //  dimensions.height = window.innerHeight * 0.7;
-    //     dimensions.boundedHeight = dimensions.height
-    //         - dimensions.margin.top
-    //         - dimensions.margin.bottom;
-
         // Improved dimensions calculation
     const dimensions = {
-            width: Math.min(window.innerWidth * 0.9, 1200),
+            width: Math.min(window.innerWidth * 0.9, 1200), // Responsive width, plan to change it later
             height: Math.min(window.innerHeight * 0.7, 800),
             margin: {
                 top: 20,
@@ -101,17 +49,9 @@ async function drawMap() {
     
     dimensions.boundedWidth = dimensions.width - dimensions.margin.left - dimensions.margin.right;
     dimensions.boundedHeight = dimensions.height - dimensions.margin.top - dimensions.margin.bottom;
-
-
-
-    
-    // const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
    
         const projection = d3.geoMercator()
             .fitSize([dimensions.boundedWidth, dimensions.boundedHeight], stateShapes)
-            // .center([8.6753, 9.0820])
-            // .translate([dimensions.boundedWidth / 2, dimensions.boundedHeight / 2])
-            // .scale([2000]);
 
         const pathGenerator = d3.geoPath().projection(projection);
 
@@ -121,7 +61,6 @@ async function drawMap() {
             .attr('height', dimensions.height)
             .attr('viewBox', `0 0 ${dimensions.width} ${dimensions.height}`)
             .attr('preserveAspectRatio', 'xMidYMid meet')
-            // .attr("style", "outline: thin solid grey;")
         
         const bounds = wrapper.append('g')
             .style('transform', `translate(${dimensions.margin.left}px, ${dimensions.margin.top}px)`)
@@ -139,6 +78,7 @@ async function drawMap() {
             .attr('stroke', 'white')
             .attr('stroke-width', 0.5)
             .text((d) => d.properties['admin1Name'])
+            .attr('cursor', 'pointer')
         
 
         bounds.selectAll('text')
@@ -153,8 +93,6 @@ async function drawMap() {
             .attr('fill', 'grey')
             .attr('font-weight', 'bold')
             .attr('transform', 'translate(0, 5)')
-
-
 
         const legendGroup = wrapper.append("g")
             .attr("transform", `translate(${dimensions.boundedWidth / 2 + 200}, 
@@ -214,7 +152,7 @@ async function drawMap() {
 
         navigator.geolocation.getCurrentPosition(myPosition => {
             const [x, y] = projection([myPosition.coords.longitude, myPosition.coords.latitude])
-            wrapper.append("circle")
+            wrapper.append("circle")   // doesn't show the exact location, to investigate later
                 .attr("class", "my-position")
                 .attr("cx", x)
                 .attr("cy", y)
@@ -225,8 +163,6 @@ async function drawMap() {
             // console.log(stateShapes.features.map(stateNameAccessor));
             // console.log('GeoJSON State Names:', stateShapes.features.map(stateNameAccessor));
             // console.log('CSV State Names:', dataset.map(d => cleanStateName(d['State'])));
-          
-        
         
         function onClick(event, datum) {
             const stateName = stateNameAccessor(datum);
@@ -253,9 +189,6 @@ async function drawMap() {
             const animateChart = createChart(stateData);
             animateChart();
          }
-        
-       
-            
         
 
         function createChart(data) {
@@ -306,16 +239,13 @@ async function drawMap() {
                 .attr("stroke-opacity", 1)
                 .attr('stroker-width', 9);
     
-            // Add X axis
             svg.append("g")
                 .attr("transform", `translate(0,${chartDimensions.boundedHeight})`)
                 .call(d3.axisBottom(x));
     
-            // Add Y axis
             svg.append("g")
                 .call(d3.axisLeft(y).tickFormat(d => d3.format(".0f")(d / 1e9)));
     
-            // Add X axis label
             svg.append("text")
                 .attr("class", "axis-label")
                 .attr("text-anchor", "middle")
@@ -323,7 +253,6 @@ async function drawMap() {
                 .attr("y", chartDimensions.boundedHeight + chartDimensions.margin.bottom)
                 .text("Year");
     
-            // Add Y axis label
             svg.append("text")
                 .attr("class", "axis-label")
                 .attr("text-anchor", "middle")
@@ -332,7 +261,6 @@ async function drawMap() {
                 .attr("x", 0 - (chartDimensions.boundedHeight / 2))
                 .attr("dy", "2em")
                 .text("Budget (Billion naira)");
-
 
             function animateChart() {
                     // Animate the clip path
@@ -352,13 +280,11 @@ async function drawMap() {
                         .attr("stroke-dashoffset", 0);
                 }
     
-            // Add chart tooltip
             const tooltip = d3.select("body").append("div")
                 .attr("class", "chart-tooltip")
                 .style("opacity", 0);
     
             const bisect = d3.bisector(d => d.Date).center;
-           
 
             const hoverLine = svg.append("line")
             .attr("class", "hover-line")
@@ -369,7 +295,6 @@ async function drawMap() {
             .attr("stroke-dasharray", 4)                
             .attr("stroke-width", 2)
             .attr("pointer-events", "none");
-
 
             const hoverCircle = svg.append("circle")
             .attr("class", "hover-circle")
@@ -414,7 +339,6 @@ async function drawMap() {
 
         states.on('click', onClick)
 
-
         d3.select('svg').on('click', function(event) {
             if (event.target === this) {
                 d3.select('#state-name').text('Select a state');
@@ -422,48 +346,6 @@ async function drawMap() {
                 d3.select('#chart').html('');
             }
         });
-
-        //     const tooltip = d3.select('.tooltip')
-
-        //     tooltip.style('opacity', 1)
-        //         .select('#state').text(originalStateName);
-            
-        //     tooltip.select('#value').text(`Average: ${d3.format(",.0f")(avgBudget)}`);
-
-
-
-        //    tooltip.select('#chart').html('')
-
-        //    const tooltipSvg = tooltip.select('#chart').append('svg')
-        //    .attr('width', 200)
-        //       .attr('height', 70)
-
-        //     tooltipSvg.append('path')
-        //         .datum(stateData)
-        //         .attr('d', area)
-        //         .attr('fill', 'steelblue')
-        //         // .attr('fill-opacity', 0.5)
-        //         // .attr('stroke', 'black')
-        //         // .attr('stroke-width', 1)
-
-        //     const [x, y] = d3.pointer(event);
-        //     tooltip.style("left", (x + 10) + "px")
-        //         .style("top", (y - 10) + "px")
-            
-
-
-
-        // };
-
-        // states.on('mouseenter', onMouseEnter)
-        //        .on("mousemove", (event,d) => {
-        //              const [x, y] = d3.pointer(event);
-        //              d3.select('.tooltip')
-        //                   .style('left', (x+10) + 'px')
-        //                   .style('top', (y-10) + 'px');
-        //        })
-    
-
 
 
     };
